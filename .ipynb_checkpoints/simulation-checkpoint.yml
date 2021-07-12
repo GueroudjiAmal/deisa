@@ -1,0 +1,67 @@
+pdi:
+  metadata:
+    ii:     int
+    generations: int 
+    pcoord_1d:     int
+    pcoord: { type: array, subtype: int, size: 2 }
+    dsize:  { type: array, subtype: int, size: 2 }
+    psize_1d: int 
+    gmax: int 
+  data:
+    main_field: { type: array, subtype: double, size: [ '$dsize[0]-2', '$dsize[1]-2' ] }
+    time_PDI: { type: array, subtype: double, size: $generations }
+    time_S: { type: array, subtype: double, size: $generations }
+    time_E: { type: array, subtype: double, size: $generations }
+  plugins:
+    #mpi:
+    pycall:
+      on_event:
+        Initialization:
+          with:
+            generations_p: $generations
+            pcoord_p: $pcoord
+            pcoord_1d_p: $pcoord_1d
+            psize_1d_p: $psize_1d
+            gmax_p: $gmax
+          exec: |
+              import numpy as np
+              import pandas as pd
+              from csv import writer  
+              from dask_interface import Bridge, Init
+              cpl = Init(psize_1d_p, pcoord_1d_p, pcoord_p, gmax_p)
+              raws = []
+              time_pycall_p = np.empty(3)
+              fileBridge = 'perfBridge' + str(pcoord_1d_p.item()) + '.csv'
+              fileSP = 'SimuPDI' + str(pcoord_1d_p.item()) + '.csv'
+        Available:
+          with:
+            ii_p: $ii
+            generations_p: $generations
+            pcoord_p: $pcoord
+            pcoord_1d_p: $pcoord_1d
+            main_field_p: $main_field
+            psize_1d_p: $psize_1d
+            gmax_p: $gmax
+          exec: |
+
+              perf = [ii_p.item(), pcoord_1d_p.item()]    
+              time_pycall_p[0], time_pycall_p[1], time_pycall_p[2] = cpl.publish_data( ii_p, main_field_p)
+              raws.append(list(perf)+list(time_pycall_p))
+                  
+        Finalization:
+          with:
+            generations_p: $generations
+            pcoord_1d_p: $pcoord_1d
+            time_S_p: $time_S
+            time_E_p: $time_E
+            time_PDI_p: $time_PDI
+          exec: |
+            with open(fileBridge, 'a') as f_object: 
+                      writer_object = writer(f_object) 
+                      writer_object.writerow(["generation", "rank", "Scatter", "Publish", "Queues"] ) 
+                      writer_object.writerows(raws) 
+            with open(fileSP, 'a') as f_object: 
+                      writer_object = writer(f_object) 
+                      writer_object.writerow(["generation" , "rank" , "simulation","exchange", "PDI"]) 
+                      writer_object.writerows(zip(np.arange(generations_p.item()),np.full((generations_p.item()), pcoord_1d_p.item() ), time_S_p, time_E_p, time_PDI_p)) 
+            cpl.Finalize()
