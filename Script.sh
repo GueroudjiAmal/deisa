@@ -60,7 +60,7 @@ client_pid=$!
 
 echo Scheduler booted, launching workers 
 
-# Launch Dask workers in the rest of the allocated nodes 
+# Launch Dask workers 
 srun --relative=1  --nodes=$NWORKER  --cpu-bind=verbose  -l \
      --output=worker-%t.log \
      $PYTH `which dask-worker` \
