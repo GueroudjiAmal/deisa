@@ -39,7 +39,6 @@ class Bridge:
         
    
     def publish_data(self, g, data) :
-        tic2 = time.perf_counter()
         name = "dns" + str(self.rank) + "g" + str(g)
         index = self.position.tolist()
         index.append(g.item())
@@ -48,21 +47,10 @@ class Bridge:
         ds.index = index
         ds.shap = data.shape
         ds.typ = str(data.dtype) 
-        toto = time.perf_counter()
-        self.queue.put(dict(ds.__dict__.items()))
-        
-        tic = time.perf_counter()
-        
+        self.queue.put(dict(ds.__dict__.items()))      
         d_future = self.client.scatter(data, direct = True, workers=self.workers)
         toc = time.perf_counter()
-        scatter = toc-tic
-        to = time.perf_counter()
         self.queue.put( d_future) 
-        to1 = time.perf_counter()
-        q = to1 - to + tic - toto
-        toc2 = time.perf_counter()
-        publish = toc2-tic2
-        return scatter, publish, q
    
     def Finalize(self):
         self.queue.put(1)
@@ -71,7 +59,7 @@ def Init(Ssize, rank, pos, gmax):
     return Bridge(Ssize,rank, pos, gmax)
    
 
-class CoupleDask :
+class Adaptor:
     adr = ""
     client = None
     workers = []
@@ -91,14 +79,12 @@ class CoupleDask :
         
     def get_data(self):
         items = []
-        tic1 = time.perf_counter()
         l = self.client.sync(self.getAll, self.queues)
         for m in l:
             m[0]["data"] =  da.from_delayed(dask.delayed(m[1]), m[0]["shap"], dtype=m[0]["typ"])
             items.append(m[0])
-        toc1 = time.perf_counter()
         l = self.array_sort(items)
-        return da.block(l), toc1 - tic1
+        return da.block(l)
     
     async def getAll(self, queues):
         res = []
@@ -121,7 +107,7 @@ class CoupleDask :
         self.client.shutdown()
 
 def Initialization(Ssize, Sworker):
-    return CoupleDask(Ssize, Sworker)
+    return Adaptor(Ssize, Sworker)
 
 
     

@@ -134,25 +134,10 @@ int main( int argc, char* argv[] )
     long SousIter ;
     PC_int(PC_get(conf, ".timeStep" ), &SousIter);
     
-    if (pcoord_1d == 0){
-        printf(" \n##################################################################\n" );
-        time_t T= time(NULL);
-        struct  tm tm = *localtime(&T);
-        printf("System Date is: %02d/%02d/%04d\n",tm.tm_mday, tm.tm_mon+1, tm.tm_year+1900);
-        printf("System Time is: %02d:%02d:%02d\n",tm.tm_hour, tm.tm_min, tm.tm_sec);
-
-        printf(" Global size is {%d} * {%d}\n", global_size[0], global_size[1] );
-        printf(" Parallelism  is {%d} * {%d}\n", psize[0], psize[1] );
-        printf(" Generations {%d}\n", generations );
-        printf(" Gmax {%d}\n", gmax );
-        printf(" SpusIter {%d}\n", SousIter );
-        printf(" \n##################################################################\n" );
-    }
-    
     conf = PC_parse_path("simulation.yml");
+
     // initialize PDI, it can replace our main communicator by its own
     PDI_init(PC_get(conf, ".pdi"));
-    
     
     // check the configuration is coherent
     assert(global_size[0]%psize[0]==0);
@@ -188,18 +173,9 @@ int main( int argc, char* argv[] )
                      "generations",      &generations,  PDI_OUT,
                       NULL);
     
-    double time11, time21, t;
-    double time12, time22, tt ;   
-    
-    double time_PDI[generations];
-    double time_S[generations];
-    double time_E[generations];
-   
     // the main loop
-    t = MPI_Wtime();
     for (; ii<generations; ++ii) {
         
-        time11 = MPI_Wtime();
         for (int jj=0; jj<(int)SousIter; ++jj) {
             
             // compute the values for the next iteration
@@ -212,37 +188,15 @@ int main( int argc, char* argv[] )
             double (*tmp)[dsize[1]] = cur; cur = next; next = tmp;
 
         }
-        time21= MPI_Wtime();
-        time_S[ii] = time21 - time11;
-        
-        time12 = MPI_Wtime();
         
         // expose some main field and loop counter
         PDI_multi_expose("Available", 
                  "ii",         &ii, PDI_OUT,
                  "main_field", &cur[1][1], PDI_OUT, 
                   NULL);
-        
-        time22= MPI_Wtime();
-        time_PDI[ii] = time22 - time12;
-        
-        //Barrier 
-        time11 = MPI_Wtime();
-        MPI_Barrier(cart_comm);
-        time21= MPI_Wtime();
-        time_E[ii] = time21 - time11;
-                      
-    }
-    tt = MPI_Wtime();
-    
-    PDI_multi_expose("Finalization", 
-         "time_S", &time_S, PDI_OUT,
-         "time_E", &time_E, PDI_OUT,
-         "time_PDI", &time_PDI, PDI_OUT, 
-         NULL);     
 
-    printf(" \n");
-    printf(" rank %d  total time simulation SimulationTo %f\n",  pcoord_1d, tt - t);
+        MPI_Barrier(cart_comm);                      
+    }
     
     PDI_finalize();
 

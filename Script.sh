@@ -1,81 +1,58 @@
 #!/bin/bash
 
-source ~/.bashrc
+#SBATCH -J dask-cluster
+#SBATCH -A dask_coupling
+#SBATCH --time=01:00:00
+#SBATCH --nodes=4
+#SBATCH --partition=cpu_med
+#SBATCH --exclusive
 
-echo SLURM_JOB_NODELIST :  $SLURM_JOB_NODELIST  
-
-RATIOSIMUNWORKERN=4
-NWORKERPNODE=16
-NCOREPPROC=1
-NPROCPNODE=32
-
-RATIO=$(($RATIOSIMUNWORKERN + 1 ))
-
-NWORKER=$(($(($SLURM_NNODES - 1 )) / $RATIO))
-
-NDASK=$(($NWORKER + 1 ))
-
-NSIMU=$(($SLURM_NNODES - $NDASK))
-
-NPROC=$(($NSIMU * $NPROCPNODE)) 
-
-
-# Set OpenMP threads
-export OMP_NUM_THREADS=$NCOREPPROC
-export MKL_NUM_THREADS=1
-export OPENBLAS_NUM_THREADS=1
+NDASK=3                           # Total number of nodes allocated for dask cluster
+NSIMU=$(($SLURM_NNODES - $NDASK)) # Number of nodes allocated for the simulation 
+NWORKER=$(($NDASK - 1))           # Number of nodes allocated for the Dask Worker 
+NPROC=4                          # Total number of processes
+NPROCPNODE=4                     # Number of processes per node
+NWORKERPNODE=4                   # Number of Dask workers per node
 
 SCHEFILE=scheduler.json
-PYTH='/gpfs/workdir/gueroudjia/.conda/envs/PhDEnv/bin/python' 
 
-module purge   
-module load cmake/3.16.2/intel-19.0.3.199 gcc/9.2.0/gcc-4.8.5 openmpi/3.1.5/gcc-9.2.0
+source $WORKDIR/spack/share/spack/setup-env.sh
+spack load pdiplugin-pycall
+spack load py-distributed
 
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/gpfs/workdir/gueroudjia/.conda/envs/PhDEnv/lib/
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/gpfs/workdir/gueroudjia/pdi-ph5_fix-c5d2e5c0a27b2b2de083c72d1412e9d7e4498ccc/build/staging/lib
-
-env 
-
-echo $PYTH
-echo Used scheduler `which dask-scheduler`
-echo Used python `which python`
-echo Launching Scheduler 
 
 # Launch Dask Scheduler in a 1 Node and save the connection information in $SCHEFILE
+echo launching Scheduler 
 srun --relative=0  --cpu-bind=verbose --ntasks=1 --nodes=1 -l \
     --output=scheduler.log \
-    $PYTH `which dask-scheduler` \
+    dask-scheduler \
     --interface ib0 \
     --scheduler-file=$SCHEFILE   &
 
-
+# Wait for the SCHEFILE to be created 
 while ! [ -f $SCHEFILE ]; do
     sleep 3
     echo -n .
 done
 
+# Connect the client to the Dask scheduler
 echo Connect Master Client  
-$PYTH client.py &
+`which python` client.py &
 client_pid=$!
 
-echo Scheduler booted, launching workers 
-
-# Launch Dask workers 
+# Launch Dask workers in the rest of the allocated nodes 
+echo Scheduler booted, Client connected, launching workers 
 srun --relative=1  --nodes=$NWORKER  --cpu-bind=verbose  -l \
      --output=worker-%t.log \
-     $PYTH `which dask-worker` \
+     dask-worker \
      --interface ib0 \
-     --nprocs $NWORKERPNODE \
      --local-directory /tmp \
+     --nprocs $NWORKERPNODE \
      --scheduler-file=${SCHEFILE} &
-
-
+     
+# Launch the simulation code
 echo Running Simulation 
+pdirun srun --relative=$NDASK --nodes=$NSIMU --ntasks=$NPROC --ntasks-per-node=$NPROCPNODE  -l ./simulation  &
 
-${HOME}/local/bin/pdirun srun --distribution=block:block --relative=$NDASK --nodes=$NSIMU --ntasks=$NPROC --ntasks-per-node=$NPROCPNODE --cpus-per-task=$NCOREPPROC  --cpu-bind=verbose -l ./simulation &
-
+# Wait for the client process to be finished 
 wait $client_pid
-
-#Cleaning
-$PYTH postscript.py
-
