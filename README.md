@@ -6,8 +6,8 @@ To run the example : `bash Launcher.sh`.
 
 ## Pre-requirement : 
 
-- Install [PDI Data Interface](https://pdi.dev/master/) with pycall support.
-- Dask and Dask distributed
+- Install [PDI Data Interface](https://pdi.dev/master/) with pycall support, [spack](https://github.com/pdidev/spack) installation is recomended.  
+- Dask Distributed
 
 ## Some pointers :
 
