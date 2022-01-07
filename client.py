@@ -7,7 +7,6 @@ with open(r'config.yml') as file:
     Ssize = data["parallelism"]["height"]*data["parallelism"]["width"]
     generations = data["generations"]
     Sworkers = data["workers"]
-    timeStep = 1
 
 Adaptor = Initialization(Ssize, Sworkers)
 Adaptor.client.get_versions(check=True)
