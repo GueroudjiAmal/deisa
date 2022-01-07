@@ -175,19 +175,15 @@ int main( int argc, char* argv[] )
     
     // the main loop
     for (; ii<generations; ++ii) {
-        
-        for (int jj=0; jj<(int)SousIter; ++jj) {
             
-            // compute the values for the next iteration
-            iter(dsize, cur, next);
+        // compute the values for the next iteration
+        iter(dsize, cur, next);
 
-            // exchange data with the neighbours
-            exchange(cart_comm, next);
+        // exchange data with the neighbours
+        exchange(cart_comm, next);
 
-            // swap the current and next values
-            double (*tmp)[dsize[1]] = cur; cur = next; next = tmp;
-
-        }
+        // swap the current and next values
+        double (*tmp)[dsize[1]] = cur; cur = next; next = tmp;
         
         // expose some main field and loop counter
         PDI_multi_expose("Available", 

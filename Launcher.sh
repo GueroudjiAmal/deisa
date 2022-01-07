@@ -8,26 +8,32 @@
 # sys.argv[7] : nworker
 # sys.argv[8] : timeStep
 
+DIR=$PWD
+
 source $WORKDIR/spack/share/spack/setup-env.sh
 spack load cmake@3.22.1
+spack load intel-mpi@2019.8.254%gcc@9.2.0
 spack load pdiplugin-pycall
+spack load py-pyyaml
 
 NWORKER=8
 
 PARALLELISM1=2
 PARALLELISM2=2
 
-DATASIZE1=66560
-DATASIZE2=61440
+DATASIZE1=1024
+DATASIZE2=1024
 
 GENERATION=5
 GMAX=100
+
+TIMESTEP=1
 
 mkdir -p $WORKDIR/Deisa
 WORKSPACE=$(mktemp -d -p $WORKDIR/Deisa/ Dask-run-XXX)
 
 cd $WORKSPACE
-cp $DIR/simulation.yml $DIR/*.py  $DIR/Script.sh $DIR/Coupling.sh  $DIR/*.c $DIR/CMakeLists.txt  .
+cp $DIR/simulation.yml $DIR/*.py  $DIR/*.sh  $DIR/*.c $DIR/CMakeLists.txt  .
 pdirun cmake .
 make -B simulation
 echo Running $WORKSPACE 
