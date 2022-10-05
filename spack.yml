@@ -1,0 +1,9 @@
+# It describes a set of packages to be installed, along with
+# configuration settings.
+spack:
+  # add package specs to the `specs` list
+  concretization: together
+  specs: [pdi, pdiplugin-mpi, pdiplugin-decl-hdf5, pdiplugin-pycall, pdiplugin-trace, pdiplugin-user-code, pdiplugin-deisa]
+
+
+
