@@ -27,20 +27,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #=============================================================================
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.9)
 project(pdi_deisa_plugin LANGUAGES C CXX)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-
-option(BUILD_INDENT "Enable automatic code indentation" OFF)
-
-#include(CTest)
-
-include(GNUInstallDirs)
-
-# Astyle
-if("${BUILD_INDENT}")
-	find_package(Astyle 3.1 REQUIRED)
-endif()
 
 find_package(Python3Path REQUIRED COMPONENTS Interpreter Development)
 
@@ -54,25 +43,19 @@ find_package(pybind11 2.3.0 REQUIRED)
 set(Python3_FOUND "${_pdi_deisa_plugin_Python3_FOUND}")
 
 # PDI
-find_package(PDI REQUIRED COMPONENTS pysupport)
-find_package(MPI REQUIRED COMPONENTS CXX C ${MPI_COMPONENTS})
+find_package(PDI 1.4 REQUIRED COMPONENTS pysupport)
+find_package(MPI REQUIRED COMPONENTS CXX)
 
 # The plugin
 add_library(pdi_deisa_plugin MODULE deisa.cxx)
 # link against Python3::Python to workaround https://github.com/pybind/pybind11/issues/2664
-#target_link_libraries(pdi_deisa_plugin PDI::PDI_pysupport pybind11::embed Python3::Python)
 target_link_libraries(pdi_deisa_plugin PDI::PDI_plugins PDI::PDI_pysupport pybind11::embed Python3::Python MPI::MPI_CXX)
+target_compile_features(pdi_deisa_plugin PRIVATE cxx_std_14)
 set_target_properties(pdi_deisa_plugin PROPERTIES
-		CXX_STANDARD 14
 		CXX_STANDARD_REQUIRED TRUE
 		CXX_VISIBILITY_PRESET hidden)
 
-# Indentation
-if("${BUILD_INDENT}")
-	Astyle_add_indent(indent TEST
-		OPTIONS_FILE formating.astyle
-		deisa.cxx)
-endif()
+include(GNUInstallDirs)
 
 # installation
 set(INSTALL_PDIPLUGINDIR "${PDI_DEFAULT_PLUGINDIR}" CACHE PATH "PDI plugins (${PDI_DEFAULT_PLUGINDIR})")
