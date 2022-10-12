@@ -52,13 +52,13 @@ add_library(pdi_deisa_plugin MODULE deisa.cxx)
 target_link_libraries(pdi_deisa_plugin PDI::PDI_plugins PDI::PDI_pysupport pybind11::embed Python3::Python MPI::MPI_CXX)
 target_compile_features(pdi_deisa_plugin PRIVATE cxx_std_14)
 set_target_properties(pdi_deisa_plugin PROPERTIES
-		CXX_STANDARD_REQUIRED TRUE
-		CXX_VISIBILITY_PRESET hidden)
+    CXX_STANDARD_REQUIRED TRUE
+    CXX_VISIBILITY_PRESET hidden)
 
 include(GNUInstallDirs)
 
 # installation
 set(INSTALL_PDIPLUGINDIR "${PDI_DEFAULT_PLUGINDIR}" CACHE PATH "PDI plugins (${PDI_DEFAULT_PLUGINDIR})")
 install(TARGETS pdi_deisa_plugin
-		LIBRARY DESTINATION "${INSTALL_PDIPLUGINDIR}"
+    LIBRARY DESTINATION "${INSTALL_PDIPLUGINDIR}"
 )

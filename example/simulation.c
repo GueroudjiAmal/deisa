@@ -172,8 +172,8 @@ int main( int argc, char* argv[] )
                  "timestep",         &ii, PDI_OUT,
                  "local_t", cur, PDI_OUT,
                   NULL);
-        
-        for (int jj=0; jj<10; ++jj){       
+
+        for (int jj=0; jj<10; ++jj){
             // compute the values for the next iteration
             iter(dsize, cur, next);
 
@@ -202,4 +202,3 @@ int main( int argc, char* argv[] )
     fprintf(stderr, "[%d] SUCCESS\n", pcoord_1d);
     return EXIT_SUCCESS;
 }
-
