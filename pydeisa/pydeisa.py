@@ -15,7 +15,6 @@ import json
 import yaml
 
 import time
-import yappi 
 import trace 
 
 
@@ -251,29 +250,13 @@ class Bridge:
             ts = time.time()
             
             tracer = trace.Trace(count=0, trace=0, countfuncs=1, countcallers=1)
-            yappi.set_clock_type("wall")
-            yappi.start()
             f = self.client.scatter(data, direct = True, workers=self.workers, keys=[key], deisa=True)            
             while (f.status != 'finished' or f==None ):
                 f = self.client.scatter(data, direct = True, workers=self.workers, keys=[key], deisa=True)
-            yappi.stop()
             allstats = "stats_r"+str(self.rank)+".t"+str(timestep)
             debug = "debug_r"+str(self.rank)+".t"+str(timestep)
             callgrind = "callgrind_r"+str(self.rank)+".t"+str(timestep)
-            stats = yappi.get_func_stats() 
-            threads = yappi.get_thread_stats()
 
-            with open(debug, 'w') as f:
-                with redirect_stdout(f):
-                    stats.debug_print()
-                    threads.print_all()
-            
-            
-            stats.print_all()       
-            stats.save(callgrind, type="callgrind")
-        
-            stats.clear()
-            yappi.clear_stats()
             ts = time.time() - ts
             print("scatter et profiling  : ", ts,"secondes" , flush=True )
             data=None
