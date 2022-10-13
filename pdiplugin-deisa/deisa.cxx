@@ -28,9 +28,9 @@ using PDI::Context;
 using PDI::Config_error;
 using PDI::each;
 using PDI::Datatype;
-using PDI::Datatype_uptr;
+using PDI::Datatype_sptr;
 using PDI::Datatype_template;
-using PDI::Datatype_template_uptr;
+using PDI::Datatype_template_ptr;
 using PDI::Error;
 using PDI::Expression;
 using PDI::len;
@@ -95,7 +95,7 @@ class deisa_plugin:
   //Determine if python interpreter is initialized by the plugin.
   bool interpreter_initialized_in_plugin = false;
   Expression scheduler_info;
-  unordered_map<string, Datatype_template_uptr> deisa_arrays;
+  unordered_map<string, Datatype_template_ptr> deisa_arrays;
   unordered_map<string, string> deisa_map_ins;
   Expression rank ;
   Expression size ;
@@ -116,15 +116,15 @@ public:
       vector<size_t> subsizes;
       vector<size_t> timedim ;
       string deisa_array_name = key_value.first;
-      Datatype_uptr type_uptr = key_value.second->evaluate(context());
+      Datatype_sptr type_sptr = key_value.second->evaluate(context());
       timedim.emplace_back(key_value.second->attribute("timedim").to_long(context()));
       // get info from datatype
-      const Datatype* type = type_uptr.get();
+      const Datatype* type = type_sptr.get();
       while (auto&& array_type = dynamic_cast<const PDI::Array_datatype*>(type)) {
           sizes.emplace_back(array_type->size());
           starts.emplace_back(array_type->start());
           subsizes.emplace_back(array_type->subsize());
-          type = &array_type->subtype();
+          type = array_type->subtype().get();
       }
       darr["sizes"] = sizes ;
       darr["starts"] = starts ;

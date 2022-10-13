@@ -28,7 +28,7 @@
 #=============================================================================
 
 cmake_minimum_required(VERSION 3.9)
-project(pdi_deisa_plugin LANGUAGES C CXX)
+project(pdi_deisa_plugin LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 find_package(Python3Path REQUIRED COMPONENTS Interpreter Development)
@@ -43,7 +43,7 @@ find_package(pybind11 2.3.0 REQUIRED)
 set(Python3_FOUND "${_pdi_deisa_plugin_Python3_FOUND}")
 
 # PDI
-find_package(PDI 1.4 REQUIRED COMPONENTS pysupport)
+find_package(PDI 1.5 REQUIRED COMPONENTS pysupport)
 find_package(MPI REQUIRED COMPONENTS CXX)
 
 # The plugin
