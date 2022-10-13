@@ -14,11 +14,11 @@ pdi:
       subsize: ['$dsize[0] - 2', '$dsize[1] - 2']
       start: [1, 1]
   plugins:
-#    trace: 
-    mpi: 
+#    trace:
+    mpi:
     deisa:
       scheduler_info: scheduler.json
-      init_on: init                                                                               # Event called after sharing all metdata 
+      init_on: init                                                                               # Event called after sharing all metdata
       time_step: $timestep                                                                        # Timestep variable
       deisa_arrays:                                                                               # Those are Deisa virtual arrays equivalent to Dask arrays
         global_t:                                                                                 # That's the name that i will send to Dask for this array
@@ -27,9 +27,6 @@ pdi:
           size: [$MaxtimeSteps, '($dsize[0] - 2) * $psize[0]', '($dsize[1] - 2) * $psize[1]']
           subsize: [1, '$dsize[0] - 2', '$dsize[1] - 2']                                          # That's how it's chunked, the size of each chunk
           start: [$timestep, '($dsize[0] - 2) * $pcoord[0]', '($dsize[1] - 2) * $pcoord[1]']      # That's where each chunk will start
-          +timedim: 0                                                                             # A tag for the time dim, only this configuration is supported for the moment 
+          +timedim: 0                                                                             # A tag for the time dim, only this configuration is supported for the moment
       map_in:                                                                                     # Which local data will be mapped to which deisa array
         local_t: global_t
-      
-
-
