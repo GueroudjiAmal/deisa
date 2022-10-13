@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pydeisa_package_agueroudji"
+version = "0.0.0"
+authors = [
+  { name="A. Gueroudji", email="amal.gueroudji@cea.fr" },
+]
+description = ""
+readme = ""
+requires-python = ">=3"
+dependencies = [
+    "PyYAML",
+    "dask"
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://gitlab.maisondelasimulation.fr/agueroud/deisa"
