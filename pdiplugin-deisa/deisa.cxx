@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -54,7 +55,7 @@ using std::unordered_multimap;
 using std::unordered_map;
 using std::vector;
 
-pybind11::dtype datatype_to_pydtype(const Scalar_datatype* scalar_type)
+pybind11::dtype datatype_to_pydtype(std::shared_ptr<const Scalar_datatype> scalar_type)
 {
     switch (scalar_type->kind()) {
     case Scalar_kind::FLOAT: {
@@ -119,19 +120,18 @@ public:
       Datatype_sptr type_sptr = key_value.second->evaluate(context());
       timedim.emplace_back(key_value.second->attribute("timedim").to_long(context()));
       // get info from datatype
-      const Datatype* type = type_sptr.get();
-      while (auto&& array_type = dynamic_cast<const PDI::Array_datatype*>(type)) {
+      while (auto&& array_type = std::dynamic_pointer_cast<const PDI::Array_datatype>(type_sptr)) {
           sizes.emplace_back(array_type->size());
           starts.emplace_back(array_type->start());
           subsizes.emplace_back(array_type->subsize());
-          type = array_type->subtype().get();
+          type_sptr = array_type->subtype();
       }
       darr["sizes"] = sizes ;
       darr["starts"] = starts ;
       darr["subsizes"] = subsizes ;
       darr["timedim"] = timedim ;
       darrs[deisa_array_name] = darr ;
-      darrs_dtype[deisa_array_name] = datatype_to_pydtype(dynamic_cast<const Scalar_datatype*>(type));
+      darrs_dtype[deisa_array_name] = datatype_to_pydtype(std::dynamic_pointer_cast<const Scalar_datatype>(type_sptr));
     }
 
     // a python context we fill with exposed variables
