@@ -3,23 +3,24 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pydeisa_package_agueroudji"
-version = "0.0.0"
+name = "deisa"
+version = "0.2.0"
 authors = [
   { name="A. Gueroudji", email="amal.gueroudji@cea.fr" },
 ]
 description = ""
 readme = ""
-requires-python = ">=3"
+requires-python = ">=3.9"
 dependencies = [
     "PyYAML",
-    "dask"
+    "dask[distributed]"
 ]
 classifiers = [
-    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha"
 ]
 
 [project.urls]
-"Homepage" = "https://gitlab.maisondelasimulation.fr/agueroud/deisa"
+"Homepage" = "https://github.com/GueroudjiAmal/deisa"
