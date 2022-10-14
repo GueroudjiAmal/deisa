@@ -1,4 +1,4 @@
-from pydeisa import Deisa
+from deisa import Deisa
 from dask.distributed import performance_report, wait
 import os
 

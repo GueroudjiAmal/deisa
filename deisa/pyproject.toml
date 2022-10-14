@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=59.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "deisa"
-version = "0.2.0"
+version = "0.2.1"
 authors = [
   { name="A. Gueroudji", email="amal.gueroudji@cea.fr" },
 ]
