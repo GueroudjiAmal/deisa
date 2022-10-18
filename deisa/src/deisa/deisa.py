@@ -17,6 +17,8 @@ import yaml
 import time
 import trace
 
+VERSION="0.2.4"
+
 
 def Deisa(scheduler_info, config):
     os.environ["DASK_DISTRIBUTED__COMM__UCX__INFINIBAND"]= "True"
