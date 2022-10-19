@@ -1,3 +1,14 @@
+###################################################################################################
+# Copyright (c) 2020-2022 Centre national de la recherche scientifique (CNRS)
+# Copyright (c) 2020-2022 Commissariat a l'énergie atomique et aux énergies alternatives (CEA)
+# Copyright (c) 2020-2022 Institut national de recherche en informatique et en automatique (Inria)
+# Copyright (c) 2020-2022 Université Paris-Saclay
+# Copyright (c) 2020-2022 Université de Versailles Saint-Quentin-en-Yvelines
+#
+# SPDX-License-Identifier: MIT
+#
+###################################################################################################
+
 import sys
 import os
 
@@ -17,15 +28,16 @@ import yaml
 import time
 import trace
 
-VERSION="0.2.4"
+from . __version__ import __version__
 
 
 def Deisa(scheduler_info, config):
-    os.environ["DASK_DISTRIBUTED__COMM__UCX__INFINIBAND"]= "True"
+    os.environ["DASK_DISTRIBUTED__COMM__UCX__INFINIBAND"] = "True"
     with open(config) as file:
         data = yaml.load(file, Loader=yaml.FullLoader)
         Sworkers = data["workers"]
     return Adaptor(Sworkers, scheduler_info)
+
 
 def connect(sched_file):
     sched = ''.join(chr(i) for i in sched_file)
@@ -33,16 +45,18 @@ def connect(sched_file):
         s = json.load(f)
     adr = s["address"]
     try:
-        client  = Client(adr)
+        client = Client(adr)
     except Exception as e:
         print("retrying ...", flush=True)
         client = Client(adr)
     return client
 
+
 def init(sched_file, rank, size, arrays, deisa_arrays_dtype):
-    os.environ["DASK_DISTRIBUTED__COMM__UCX__INFINIBAND"]= "True"
+    os.environ["DASK_DISTRIBUTED__COMM__UCX__INFINIBAND"] = "True"
     client = connect(sched_file)
     return Bridge(client, size, rank, arrays, deisa_arrays_dtype)
+
 
 class deisa_array:
     """
@@ -58,49 +72,54 @@ class deisa_array:
         ls_norm = []
         if isinstance(ls, (tuple, list)):
             for s in ls:
-                ls_norm.append(self.normalize(s,ls.index(s)))
+                ls_norm.append(self.normalize(s, ls.index(s)))
             return tuple(ls_norm)
 
-    def normalize_slice(self,s,index):
-        if s[0] == None:
+    def normalize_slice(self, s, index):
+        if s[0] is None:
             s[0] = 0
 
-        if s[1] == None:
+        if s[1] is None:
             s[1] = self.array.shape[index]
 
-        if s[2] == None:
+        if s[2] is None:
             s[2] = 1
 
-        elif s[2] < 0 :
+        elif s[2] < 0:
             raise ValueError(
                 f"{s} only positive step values are accepted"
             )
         for i in range(2):
             if s[i] < 0:
-                s[i] = self.array.shape[index]+ s[i]
+                s[i] = self.array.shape[index] + s[i]
         return tuple(s)
 
     def __getitem__(self, slc):
         selection = []
         default = [None, None, None]
         if isinstance(slc, slice):
-            selection.append(self.normalize_slice([slc.start, slc.stop, slc.step], 0))
+            selection.append(self.normalize_slice(
+                [slc.start, slc.stop, slc.step], 0))
         elif isinstance(slc, tuple):
             for s in range(len(slc)):
                 if isinstance(slc[s], slice):
-                    selection.append(self.normalize_slice([slc[s].start, slc[s].stop, slc[s].step], s))
+                    selection.append(self.normalize_slice(
+                        [slc[s].start, slc[s].stop, slc[s].step], s))
                 elif isinstance(slc[s], int):
-                    if slc[s]>= 0:
+                    if slc[s] >= 0:
                         selection.append((slc[s], slc[s]+1, 1))
                     else:
-                        selection.append((slc[s]+self.array.shape[s], slc[s]+self.array.shape[slc.index(s)]+1, 1))
+                        selec0 = slc[s]+self.array.shape[s]
+                        selec1 = slc[s]+self.array.shape[slc.index(s)]+1
+                        selection.append((selec0, selec1, 1))
                 elif isinstance(slc[s], type(Ellipsis)):
                     selection.append(self.normalize_slice([0, None, 1], s))
         elif isinstance(slc, int):
-            if slc>= 0:
+            if slc >= 0:
                 selection.append((slc, slc+1, 1))
             else:
-                selection.append((slc+ self.array.shape[0], slc + self.array.shape[0] + 1, 1))
+                selection.append(
+                    (slc + self.array.shape[0], slc + self.array.shape[0] + 1, 1))
         elif isinstance(slc, type(Ellipsis)):
             selection.append((0, self.array.shape[0], 1))
         else:
@@ -109,7 +128,6 @@ class deisa_array:
             )
         self.selection = selection
         return self.array.__getitem__(slc)
-
 
     def get_name(self):
         return self.name
@@ -125,6 +143,7 @@ class deisa_array:
 
     def gc(self):
         del self.array
+
 
 class deisa_arrays:
     """
@@ -142,8 +161,8 @@ class deisa_arrays:
             if dea.get_name() == name:
                 return dea
         raise ValueError(
-                f"{name} array does not exist in Deisa data store"
-            )
+            f"{name} array does not exist in Deisa data store"
+        )
 
     def add_deisa_array(self, deisa_a, name=None):
         if isinstance(deisa_a, deisa_array):
@@ -166,14 +185,14 @@ class deisa_arrays:
             dea.reset_selection()
 
     def check_contract(self):
-        if self.contract == None:
+        if self.contract is None:
             self.generate_contract()
         return self.contract
 
     def generate_contract(self):
         self.contract = {}
         for a in self.arrays:
-            self.contract[a.name] =  a.selection
+            self.contract[a.name] = a.selection
 
     def validate_contract(self):
         print("Generated contract", self.contract, flush=True)
@@ -194,22 +213,24 @@ class Bridge:
     """
 
     def __init__(self, Client, Ssize, rank, arrays, deisa_arrays_dtype):
-        self.client  = Client
+        self.client = Client
         self.rank = rank
         self.contract = None
         listw = Variable("workers").get()
-        if Ssize > len(listw): # more processes than workers
-            self.workers = [listw[rank%len(listw)]]
+        if Ssize > len(listw):  # more processes than workers
+            self.workers = [listw[rank % len(listw)]]
         else:
-            k = len(listw)//Ssize # more workers than processes
-            self.workers = listw[rank*k:rank*k+ k]
+            k = len(listw)//Ssize  # more workers than processes
+            self.workers = listw[rank*k:rank*k + k]
         self.arrays = arrays
         for ele in self.arrays:
             self.arrays[ele]["dtype"] = str(deisa_arrays_dtype[ele])
             self.arrays[ele]["timedim"] = self.arrays[ele]["timedim"][0]
-            self.position = [self.arrays[ele]["starts"][i]//self.arrays[ele]["subsizes"][i] for i in range(len(np.array(self.arrays[ele]["sizes"])))]
-        if rank==0:
-            Queue("Arrays").put(self.arrays) # If and only if I have a perfect domain decomposition
+            self.position = [self.arrays[ele]["starts"][i]//self.arrays[ele]["subsizes"][i]
+                             for i in range(len(np.array(self.arrays[ele]["sizes"])))]
+        if rank == 0:
+            # If and only if I have a perfect domain decomposition
+            Queue("Arrays").put(self.arrays)
 
     def create_key(self, name):
         position = tuple(self.position)
@@ -220,54 +241,66 @@ class Bridge:
             selection = self.contract[data_name]
         except KeyError:
             return False
-        self.position[self.arrays[data_name]["timedim"]]= timestep
+        self.position[self.arrays[data_name]["timedim"]] = timestep
         if selection == "All":
             return True
-        elif selection == None:
+        elif selection is None:
             return False
         elif isinstance(selection, (list, tuple)):
             starts = np.array(self.arrays[data_name]["starts"])
-            ends = np.array(self.arrays[data_name]["starts"]) + np.array(self.arrays[data_name]["subsizes"])
+            ends = np.array(self.arrays[data_name]["starts"]) + \
+                np.array(self.arrays[data_name]["subsizes"])
             sizes = np.array(self.arrays[data_name]["subsizes"])
 
-            if timestep >= selection[0][1] or timestep < selection[0][0] or (timestep - selection[0][0])%selection[0][2] != 0: # if not needed timestep
+            # if not needed timestep
+            if (
+                timestep >= selection[0][1]
+                or timestep < selection[0][0]
+                or (timestep - selection[0][0]) % selection[0][2] != 0
+            ):
                 return False
 
-            else: # wanted timestep
-                for i in range(1,len(selection)):
-                    s = selection[i] # i is dim
+            else:  # wanted timestep
+                for i in range(1, len(selection)):
+                    s = selection[i]  # i is dim
                     if starts[i] >= s[1] or ends[i] < s[0] or (ends[i] % s[2]) > sizes[i]:
                         return False
                 # if there is at least some data for a dim
             return True
 
-
     def publish_data(self, data, data_name, timestep):
 
-        if self.contract == None:
+        if self.contract is None:
             self.contract = Variable("Contract").get()
         publish = self.publish_request(data_name, timestep)
         if publish:
             key = self.create_key(data_name)
             shap = list(data.shape)
-            new_shape = tuple(shap[:self.arrays[data_name]["timedim"]]+[1]+shap[self.arrays[data_name]["timedim"]:])
-            data.shape = new_shape #TODO will not copy, if not possible raise an error so handle it :p
+            new_shape = tuple(shap[:self.arrays[data_name]["timedim"]] +
+                              [1]+shap[self.arrays[data_name]["timedim"]:])
+            # TODO will not copy, if not possible raise an error so handle it :p
+            data.shape = new_shape
             ts = time.time()
 
-            tracer = trace.Trace(count=0, trace=0, countfuncs=1, countcallers=1)
-            f = self.client.scatter(data, direct = True, workers=self.workers, keys=[key], deisa=True)
-            while (f.status != 'finished' or f==None ):
-                f = self.client.scatter(data, direct = True, workers=self.workers, keys=[key], deisa=True)
+            tracer = trace.Trace(
+                count=0, trace=0, countfuncs=1, countcallers=1)
+            f = self.client.scatter(
+                data, direct=True, workers=self.workers, keys=[key], deisa=True)
+            while (f.status != 'finished' or f is None):
+                f = self.client.scatter(
+                    data, direct=True, workers=self.workers, keys=[key], deisa=True)
             allstats = "stats_r"+str(self.rank)+".t"+str(timestep)
             debug = "debug_r"+str(self.rank)+".t"+str(timestep)
             callgrind = "callgrind_r"+str(self.rank)+".t"+str(timestep)
 
             ts = time.time() - ts
-            print("scatter et profiling  : ", ts,"secondes" , flush=True )
-            data=None
+            print("scatter et profiling  : ", ts, "secondes", flush=True)
+            data = None
         else:
-            #print(data_name, "is not shared from process", self.position, " in timestep", timestep, flush=True)
+            # print(data_name, "is not shared from process", self.position,
+            #       " in timestep", timestep, flush=True)
             pass
+
 
 class Adaptor:
     """
@@ -277,21 +310,27 @@ class Adaptor:
     adr = ""
     client = None
     workers = []
+
     def __init__(self, Sworker, scheduler_info):
         with open(scheduler_info) as f:
             s = json.load(f)
         self.adr = s["address"]
         try:
-            self.client  = Client(self.adr)
+            self.client = Client(self.adr)
         except Exception as e:
             print("retrying ...", flush=True)
             self.client = Client(self.adr)
 
         # Check if client version is compatible with scheduler version
         self.client.get_versions(check=True)
-        #dask.config.set({"distributed.deploy.lost-worker-timeout": 60, "distributed.workers.memory.spill":0.97, "distributed.workers.memory.target":0.95, "distributed.workers.memory.terminate":0.99 })
-        self.workers =  list(self.client.scheduler_info()["workers"].keys())
-        while (len(self.workers)!= Sworker):
+        # dask.config.set({
+        #   "distributed.deploy.lost-worker-timeout": 60,
+        #   "distributed.workers.memory.spill":0.97,
+        #   "distributed.workers.memory.target":0.95,
+        #   "distributed.workers.memory.terminate":0.99
+        # })
+        self.workers = list(self.client.scheduler_info()["workers"].keys())
+        while (len(self.workers) != Sworker):
             self.workers = list(self.client.scheduler_info()["workers"].keys())
         Variable("workers").set(self.workers)
         print(self.workers, flush=True)
@@ -300,25 +339,28 @@ class Adaptor:
         return self.client
 
     def create_array(self, name, shape, chunksize, dtype, timedim):
-        chunks_in_each_dim = [shape[i]//chunksize[i] for i in range(len(shape))]
-        l = list(itertools.product(*[range(i) for i in chunks_in_each_dim]))
+        chunks_in_each_dim = [shape[i]//chunksize[i]
+                              for i in range(len(shape))]
+        lst = list(itertools.product(*[range(i) for i in chunks_in_each_dim]))
         items = []
-        for m in l:
-            f=Future(key=("deisa-"+name,m), inform=True, deisa=True)
+        for m in lst:
+            f = Future(key=("deisa-"+name, m), inform=True, deisa=True)
             d = da.from_delayed(dask.delayed(f), shape=chunksize, dtype=dtype)
-            items.append([list(m),d])
+            items.append([list(m), d])
         ll = self.array_sort(items)
         arrays = da.block(ll)
         return arrays
 
-    def create_array_list(self, name, shape, chunksize, dtype, timedim): # list arrays, one for each time step.
-        chunks_in_each_dim = [shape[i]//chunksize[i] for i in range(len(shape))]
-        l = list(itertools.product(*[range(i) for i in chunks_in_each_dim]))
+    # list arrays, one for each time step.
+    def create_array_list(self, name, shape, chunksize, dtype, timedim):
+        chunks_in_each_dim = [shape[i]//chunksize[i]
+                              for i in range(len(shape))]
+        lst = list(itertools.product(*[range(i) for i in chunks_in_each_dim]))
         items = []
-        for m in l:
-            f=Future(key=("deisa-"+name,m), inform=True, deisa=True)
+        for m in lst:
+            f = Future(key=("deisa-"+name, m), inform=True, deisa=True)
             d = da.from_delayed(dask.delayed(f), shape=chunksize, dtype=dtype)
-            items.append([list(m),d])
+            items.append([list(m), d])
         ll = self.array_sort(items)
         for i in ll:
             arrays.append(da.block(i))
@@ -330,22 +372,40 @@ class Adaptor:
         else:
             dico = dict()
             for e in ListDs:
-                dico.setdefault(e[0][0],[]).append([e[0][1:], e[1]])
+                dico.setdefault(e[0][0], []).append([e[0][1:], e[1]])
             return [self.array_sort(dico[k]) for k in sorted(dico.keys())]
 
-    def get_dask_arrays(self, as_list=False): #TODO test
+    def get_dask_arrays(self, as_list=False):  # TODO test
         arrays = dict()
         self.arrays_desc = Queue("Arrays").get()
         for name in self.arrays_desc:
             if not as_list:
-                arrays[name] = self.create_array(name,self.arrays_desc[name]["sizes"], self.arrays_desc[name]["subsizes"], self.arrays_desc[name]["dtype"], self.arrays_desc[name]["timedim"])
+                arrays[name] = self.create_array(
+                    name,
+                    self.arrays_desc[name]["sizes"],
+                    self.arrays_desc[name]["subsizes"],
+                    self.arrays_desc[name]["dtype"],
+                    self.arrays_desc[name]["timedim"]
+                )
             else:
-                arrays[name] = self.create_array_list(name,self.arrays_desc[name]["sizes"], self.arrays_desc[name]["subsizes"], self.arrays_desc[name]["dtype"], self.arrays_desc[name]["timedim"])
+                arrays[name] = self.create_array_list(
+                    name,
+                    self.arrays_desc[name]["sizes"],
+                    self.arrays_desc[name]["subsizes"],
+                    self.arrays_desc[name]["dtype"],
+                    self.arrays_desc[name]["timedim"]
+                )
         return arrays
 
     def get_deisa_arrays(self):
         arrays = dict()
         self.arrays_desc = Queue("Arrays").get()
         for name in self.arrays_desc:
-            arrays[name] = self.create_array(name,self.arrays_desc[name]["sizes"], self.arrays_desc[name]["subsizes"], self.arrays_desc[name]["dtype"], self.arrays_desc[name]["timedim"])
+            arrays[name] = self.create_array(
+                name,
+                self.arrays_desc[name]["sizes"],
+                self.arrays_desc[name]["subsizes"],
+                self.arrays_desc[name]["dtype"],
+                self.arrays_desc[name]["timedim"]
+            )
         return deisa_arrays(arrays)

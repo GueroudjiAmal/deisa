@@ -1,24 +1,34 @@
+###################################################################################################
+# Copyright (c) 2020-2022 Centre national de la recherche scientifique (CNRS)
+# Copyright (c) 2020-2022 Commissariat a l'énergie atomique et aux énergies alternatives (CEA)
+# Copyright (c) 2020-2022 Institut national de recherche en informatique et en automatique (Inria)
+# Copyright (c) 2020-2022 Université Paris-Saclay
+# Copyright (c) 2020-2022 Université de Versailles Saint-Quentin-en-Yvelines
+#
+# SPDX-License-Identifier: MIT
+#
+###################################################################################################
+
 from deisa import Deisa
 from dask.distributed import performance_report, wait
 import os
 
-os.environ["DASK_DISTRIBUTED__COMM__UCX__INFINIBAND"]= "True"
+os.environ["DASK_DISTRIBUTED__COMM__UCX__INFINIBAND"] = "True"
 
 # Scheduler file name and configuration file
 scheduler_info = 'scheduler.json'
 config_file = 'config.yml'
 
-# Initialize the Deisa
+# Initialize Deisa
 Deisa = Deisa(scheduler_info, config_file)
 
 # Get client
 client = Deisa.get_client()
 
-# Get data descriptor as a list of Deisa arrays object
+# either: Get data descriptor as a list of Deisa arrays object
 arrays = Deisa.get_deisa_arrays()
-#or
-# Get data descriptor as a dict of Dask array
-#arrays = Deisa.get_dask_arrays()
+# or: Get data descriptor as a dict of Dask array
+# arrays = Deisa.get_dask_arrays()
 
 # Select data
 gt = arrays["global_t"][...]
@@ -39,6 +49,7 @@ def Derivee(F, dx):
     dFdx = c0 / dx * (F[3: - 1] - F[1: - 3] - (F[4:] - F[:- 4]) / 8.)
     return dFdx
 
+
 # py-bokeh is needed if you wanna see the perf report
 with performance_report(filename="dask-report.html"):
 
@@ -51,7 +62,8 @@ with performance_report(filename="dask-report.html"):
     # Sign contract
     arrays.validate_contract()
     del gt
-    # Print the result, note that "s" is a future object, to get the result of the computation, we call `s.result()` to retreive it.
+    # Print the result, note that "s" is a future object, to get the result of the computation,
+    # we call `s.result()` to retreive it.
     print(client.compute(s).result(), flush=True)
 
 print("Done", flush=True)
