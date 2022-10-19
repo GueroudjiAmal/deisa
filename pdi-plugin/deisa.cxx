@@ -147,9 +147,9 @@ public:
 
     // a python context we fill with exposed variables
     pydict pyscope = pymod::import("__main__").attr("__dict__");
-    pyscope["pydeisa"] = pymod::import("pydeisa");
-    pymod pydeisa = pymod::import("pydeisa");
-    pyscope["init"]  = pydeisa.attr("init");
+    pyscope["deisa"] = pymod::import("deisa");
+    pymod deisa = pymod::import("deisa");
+    pyscope["init"]  = deisa.attr("init");
     pyscope["scheduler_info"] = to_python(scheduler_info.to_ref(context()));
     pyscope["size"] = to_python(size.to_ref(context()));
     pyscope["rank"] = to_python(rank.to_ref(context()));
