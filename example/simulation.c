@@ -1,3 +1,14 @@
+/******************************************************************************
+ * Copyright (c) 2020-2022 Centre national de la recherche scientifique (CNRS)
+ * Copyright (c) 2020-2022 Commissariat a l'énergie atomique et aux énergies alternatives (CEA)
+ * Copyright (c) 2020-2022 Institut national de recherche en informatique et en automatique (Inria)
+ * Copyright (c) 2020-2022 Université Paris-Saclay
+ * Copyright (c) 2020-2022 Université de Versailles Saint-Quentin-en-Yvelines
+ *
+ * SPDX-License-Identifier: MIT
+ *
+ *****************************************************************************/
+
 #include <mpi.h>
 #include <omp.h>
 #include <assert.h>
@@ -172,8 +183,8 @@ int main( int argc, char* argv[] )
                  "timestep",         &ii, PDI_OUT,
                  "local_t", cur, PDI_OUT,
                   NULL);
-        
-        for (int jj=0; jj<10; ++jj){       
+
+        for (int jj=0; jj<10; ++jj){
             // compute the values for the next iteration
             iter(dsize, cur, next);
 
@@ -202,4 +213,3 @@ int main( int argc, char* argv[] )
     fprintf(stderr, "[%d] SUCCESS\n", pcoord_1d);
     return EXIT_SUCCESS;
 }
-
