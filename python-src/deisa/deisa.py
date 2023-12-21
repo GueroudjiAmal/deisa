@@ -234,7 +234,7 @@ class Bridge:
 
     def create_key(self, name):
         position = tuple(self.position)
-        return ("deisa-"+name, position)
+        return ("external-"+name, position)
 
     def publish_request(self, data_name, timestep):
         try:
@@ -285,10 +285,10 @@ class Bridge:
             tracer = trace.Trace(
                 count=0, trace=0, countfuncs=1, countcallers=1)
             f = self.client.scatter(
-                data, direct=True, workers=self.workers, keys=[key], deisa=True)
+                data, direct=True, workers=self.workers, keys=[key], external=True)
             while (f.status != 'finished' or f is None):
                 f = self.client.scatter(
-                    data, direct=True, workers=self.workers, keys=[key], deisa=True)
+                    data, direct=True, workers=self.workers, keys=[key], external=True)
             allstats = "stats_r"+str(self.rank)+".t"+str(timestep)
             debug = "debug_r"+str(self.rank)+".t"+str(timestep)
             callgrind = "callgrind_r"+str(self.rank)+".t"+str(timestep)
@@ -344,7 +344,7 @@ class Adaptor:
         lst = list(itertools.product(*[range(i) for i in chunks_in_each_dim]))
         items = []
         for m in lst:
-            f = Future(key=("deisa-"+name, m), inform=True, deisa=True)
+            f = Future(key=("external-"+name, m), inform=True, external=True)
             d = da.from_delayed(dask.delayed(f), shape=chunksize, dtype=dtype)
             items.append([list(m), d])
         ll = self.array_sort(items)
@@ -358,7 +358,7 @@ class Adaptor:
         lst = list(itertools.product(*[range(i) for i in chunks_in_each_dim]))
         items = []
         for m in lst:
-            f = Future(key=("deisa-"+name, m), inform=True, deisa=True)
+            f = Future(key=("external-"+name, m), inform=True, external=True)
             d = da.from_delayed(dask.delayed(f), shape=chunksize, dtype=dtype)
             items.append([list(m), d])
         ll = self.array_sort(items)
